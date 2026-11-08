@@ -330,5 +330,8 @@ export async function logout(request: Request): Promise<Response> {
         return failure(error);
     }
   }
-  return clearCookies(json({ authenticated: false }));
+  const response = clearCookies(json({ authenticated: false }));
+  // Drop any browser-cached responses and SDK storage from the old session.
+  response.headers.set("Clear-Site-Data", '"cache", "storage"');
+  return response;
 }

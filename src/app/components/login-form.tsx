@@ -7,10 +7,10 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import FacebookSignInButton from "./facebook-sign-in-button";
-import GoogleSignInButton, {
-  disableGoogleAutoSelect,
-} from "./google-sign-in-button";
+import FacebookSignInButton, {
+  logoutFacebook,
+} from "./facebook-sign-in-button";
+import GoogleSignInButton, { logoutGoogle } from "./google-sign-in-button";
 import {
   AppleIcon,
   ArrowRightIcon,
@@ -130,12 +130,15 @@ export default function LoginForm({
     setBusy(true);
     setNotice("");
     try {
-      const response = await fetch("/api/auth/logout", { method: "POST" });
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        cache: "no-store",
+      });
       if (!response.ok)
         throw new Error(
           await readError(response, "Chưa thể đăng xuất. Vui lòng thử lại."),
         );
-      disableGoogleAutoSelect();
+      await Promise.all([logoutGoogle(user?.email ?? null), logoutFacebook()]);
       setUser(null);
       remember.current = false;
       setNotice("Bạn đã đăng xuất thành công.");

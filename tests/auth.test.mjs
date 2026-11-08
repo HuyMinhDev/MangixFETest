@@ -371,6 +371,7 @@ test("logout revokes the backend refresh token before clearing all cookies", asy
     },
   );
   assert.equal(response.headers.getSetCookie().length, 3);
+  assert.equal(response.headers.get("Clear-Site-Data"), '"cache", "storage"');
   for (const value of response.headers.getSetCookie()) {
     assert.match(value, /Max-Age=0/);
     assert.match(value, /HttpOnly/);

@@ -22,6 +22,11 @@ type FacebookSdk = {
     callback: (response: FacebookLoginResponse) => void,
     options: { scope: "public_profile" },
   ) => void;
+  getLoginStatus: (
+    callback: (response: FacebookLoginResponse) => void,
+    force: boolean,
+  ) => void;
+  logout: (callback: () => void) => void;
 };
 
 declare global {
@@ -32,6 +37,32 @@ declare global {
 }
 
 let initializedAppId: string | undefined;
+
+// Without this, the SDK keeps the previous Facebook session and FB.login
+// silently returns a token for the account that just signed out.
+export function logoutFacebook(): Promise<void> {
+  const sdk = window.FB;
+  if (!sdk || !initializedAppId) return Promise.resolve();
+  return new Promise((resolve) => {
+    const timeout = setTimeout(resolve, 3_000);
+    const done = () => {
+      clearTimeout(timeout);
+      resolve();
+    };
+    try {
+      sdk.getLoginStatus((response) => {
+        if (response?.status !== "connected") return done();
+        try {
+          sdk.logout(done);
+        } catch {
+          done();
+        }
+      }, true);
+    } catch {
+      done();
+    }
+  });
+}
 
 export default function FacebookSignInButton({
   appId,

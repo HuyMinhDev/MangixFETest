@@ -25,6 +25,7 @@ type GoogleIdentity = {
     },
   ) => void;
   disableAutoSelect: () => void;
+  revoke: (hint: string, callback: () => void) => void;
 };
 
 declare global {
@@ -33,8 +34,30 @@ declare global {
   }
 }
 
-export function disableGoogleAutoSelect() {
-  window.google?.accounts.id.disableAutoSelect();
+// disableAutoSelect only stops One Tap from signing back in. Revoking the grant
+// also drops the personalized "continue as" button for the previous account,
+// so the next sign-in asks the user to choose an account again.
+export function logoutGoogle(email: string | null): Promise<void> {
+  const identity = window.google?.accounts.id;
+  if (!identity) return Promise.resolve();
+  try {
+    identity.disableAutoSelect();
+  } catch {
+    // Best effort: the Mangix session is already cleared on the server.
+  }
+  if (!email) return Promise.resolve();
+  return new Promise((resolve) => {
+    const timeout = setTimeout(resolve, 3_000);
+    try {
+      identity.revoke(email, () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+    } catch {
+      clearTimeout(timeout);
+      resolve();
+    }
+  });
 }
 
 export default function GoogleSignInButton({
